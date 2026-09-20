@@ -496,12 +496,34 @@ type hasRawJSON interface {
 	RawJSON() string
 }
 
+// limitedIterator prevents interactive preloading and later reads from exceeding the requested count.
+type limitedIterator[T any] struct {
+	jsonview.Iterator[T]
+	remaining int64
+}
+
+func (i *limitedIterator[T]) Next() bool {
+	if i.remaining == 0 || !i.Iterator.Next() {
+		return false
+	}
+	if i.remaining > 0 {
+		i.remaining--
+	}
+	return true
+}
+
 // ShowJSONIterator displays an iterator of values to the user. Use itemsToDisplay = -1 for no limit.
 func ShowJSONIterator[T any](iter jsonview.Iterator[T], itemsToDisplay int64, opts ShowJSONOpts) error {
 	opts.setDefaults()
+	if itemsToDisplay == 0 {
+		return iter.Err()
+	}
 
 	if strings.ToLower(opts.Format) == "explore" {
 		if isTerminal(opts.Stdout) {
+			if itemsToDisplay > 0 {
+				iter = &limitedIterator[T]{Iterator: iter, remaining: itemsToDisplay}
+			}
 			return jsonview.ExploreJSONStream(opts.Title, iter)
 		}
 		if opts.ExplicitFormat {
