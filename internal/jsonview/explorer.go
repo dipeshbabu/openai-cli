@@ -275,14 +275,17 @@ func (tv *TextView) Update(msg tea.Msg, raw bool) tea.Cmd {
 
 func (tv *TextView) Resize(width, height int) {
 	h := height - heightOffset
+	rewrap := !tv.ready || tv.viewport.Width != width
 	if !tv.ready {
 		tv.viewport = viewport.New(width, h)
-		tv.viewport.SetContent(wordwrap.String(SanitizeTerminalString(tv.data.Str), width))
 		tv.ready = true
-		return
+	} else {
+		tv.viewport.Width = width
+		tv.viewport.Height = h
 	}
-	tv.viewport.Width = width
-	tv.viewport.Height = h
+	if rewrap {
+		tv.viewport.SetContent(wordwrap.String(SanitizeTerminalString(tv.data.Str), width))
+	}
 }
 
 type JSONViewer struct {
