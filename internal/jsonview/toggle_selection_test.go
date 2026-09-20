@@ -1,0 +1,68 @@
+package jsonview
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
+)
+
+func TestExplorerToggleRawPreservesSelection(t *testing.T) {
+	t.Parallel()
+	for _, input := range []string{
+		`["first","second","third"]`,
+		`[{"id":"first"},{"id":"second"},{"id":"third"}]`,
+		`{"first":1,"second":2,"third":3}`,
+	} {
+		t.Run(input, func(t *testing.T) {
+			view, err := newTableView("", gjson.Parse(input), false)
+			require.NoError(t, err)
+			viewer := &JSONViewer{stack: []JSONView{view}, help: help.New()}
+			viewer.resize(80, 24)
+			view.table.SetCursor(2)
+			selected := viewer.getSelectedContent()
+			for i := 0; i < 4; i++ {
+				explorerKey(viewer, "r")
+				require.Equal(t, 2, viewer.current().(*TableView).table.Cursor())
+				require.Equal(t, selected, viewer.getSelectedContent(), "printing after a toggle must return the selected item")
+			}
+		})
+	}
+}
+
+func TestExplorerToggleRawPreservesParentSelection(t *testing.T) {
+	t.Parallel()
+	view, err := newTableView("", gjson.Parse(`[{"id":"first"},{"id":"second"}]`), false)
+	require.NoError(t, err)
+	viewer := &JSONViewer{stack: []JSONView{view}, help: help.New()}
+	viewer.resize(80, 24)
+	view.table.SetCursor(1)
+	explorerKey(viewer, "l")
+	require.Len(t, viewer.stack, 2)
+	explorerKey(viewer, "r")
+	explorerKey(viewer, "h")
+	require.Equal(t, `{"id":"second"}`, viewer.getSelectedContent())
+}
+
+func TestExplorerToggleRawKeepsScrolledSelectionVisible(t *testing.T) {
+	t.Parallel()
+	items := make([]string, 30)
+	for i := range items {
+		items[i] = fmt.Sprintf("item-%02d", i)
+	}
+	data, err := json.Marshal(items)
+	require.NoError(t, err)
+	view, err := newTableView("", gjson.ParseBytes(data), false)
+	require.NoError(t, err)
+	viewer := &JSONViewer{stack: []JSONView{view}, help: help.New()}
+	viewer.resize(80, 12)
+	view.table.MoveDown(25)
+	for i := 0; i < 4; i++ {
+		explorerKey(viewer, "r")
+		require.Equal(t, "item-25", viewer.getSelectedContent())
+		require.Contains(t, viewer.current().View(), "item-25")
+	}
+}

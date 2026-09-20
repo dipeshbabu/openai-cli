@@ -518,6 +518,7 @@ func (v *JSONViewer) toggleRaw() (tea.Model, tea.Cmd) {
 
 	for i, view := range v.stack {
 		if tv, ok := view.(*TableView); ok && tv.data.IsArray() {
+			cursor := tv.table.Cursor()
 			// rowData includes completed lazy loads. Rebuild only the presentation,
 			// retaining the view identity and any pending iterator command.
 			var rendered *TableView
@@ -527,16 +528,26 @@ func (v *JSONViewer) toggleRaw() (tea.Model, tea.Cmd) {
 				rendered = newArrayTableView(tv.path, tv.data, tv.rowData, v.rawMode)
 			}
 			tv.table, tv.columns, tv.columnKeys = rendered.table, rendered.columns, rendered.columnKeys
+			tv.table.SetCursor(cursor)
 			continue
 		}
 		viewWithRaw, err := newView(view.GetPath(), view.GetData(), v.rawMode)
 		if err != nil {
 			return v, tea.Printf("Error: %s", err)
 		}
+		if previous, ok := view.(*TableView); ok {
+			viewWithRaw.(*TableView).table.SetCursor(previous.table.Cursor())
+		}
 		v.stack[i] = viewWithRaw
 	}
 
 	v.resize(v.width, v.height)
+	for _, view := range v.stack {
+		if tv, ok := view.(*TableView); ok {
+			// Reveal the restored cursor using the final viewport dimensions.
+			tv.table.MoveDown(0)
+		}
+	}
 	return v, nil
 }
 
