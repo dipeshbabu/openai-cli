@@ -1,6 +1,7 @@
 package jsonview
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -39,4 +40,28 @@ func TestExplorerTextResizePreservesScrollingAndEscapes(t *testing.T) {
 	require.Zero(t, view.viewport.YOffset, "rewrapping must clamp an offset past the last line")
 	require.Equal(t, strings.Fields(SanitizeTerminalString(view.data.Str)), strings.Fields(view.View()))
 	requireNoRawTerminalControls(t, strings.TrimSpace(view.View()))
+}
+
+func TestExplorerTextReflowsInTinyTerminal(t *testing.T) {
+	t.Parallel()
+	for _, height := range []int{0, 4, 5} {
+		t.Run(fmt.Sprintf("height=%d", height), func(t *testing.T) {
+			view, err := newTextView("", gjson.Parse(`"one two three four five six seven eight nine ten"`))
+			require.NoError(t, err)
+			viewer := &JSONViewer{stack: []JSONView{view}}
+			viewer.Update(tea.WindowSizeMsg{Width: 10 + borderPadding, Height: 8})
+			view.viewport.GotoBottom()
+			require.Positive(t, view.viewport.YOffset)
+
+			require.NotPanics(t, func() {
+				viewer.Update(tea.WindowSizeMsg{Width: 100 + borderPadding, Height: height})
+				viewer.View()
+			})
+			require.GreaterOrEqual(t, view.viewport.Height, 0)
+			require.Equal(t, 1, view.viewport.TotalLineCount())
+
+			viewer.Update(tea.WindowSizeMsg{Width: 100 + borderPadding, Height: 20})
+			require.Equal(t, strings.Fields(view.data.Str), strings.Fields(view.View()))
+		})
+	}
 }

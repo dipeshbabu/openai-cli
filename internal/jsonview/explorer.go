@@ -277,7 +277,7 @@ func (tv *TextView) Update(msg tea.Msg, raw bool) tea.Cmd {
 }
 
 func (tv *TextView) Resize(width, height int) {
-	h := height - heightOffset
+	h := max(0, height-heightOffset)
 	rewrap := !tv.ready || tv.viewport.Width != width
 	if !tv.ready {
 		tv.viewport = viewport.New(width, h)
@@ -288,6 +288,8 @@ func (tv *TextView) Resize(width, height int) {
 	}
 	if rewrap {
 		tv.viewport.SetContent(wordwrap.String(SanitizeTerminalString(tv.data.Str), width))
+		// A zero-height viewport can scroll one line past the content.
+		tv.viewport.SetYOffset(min(tv.viewport.YOffset, tv.viewport.TotalLineCount()-1))
 	}
 }
 
