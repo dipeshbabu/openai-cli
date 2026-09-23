@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.16.7](https://github.com/openai/openai-cli/compare/v1.16.6...v1.16.7) (2026-09-23)
+
+
+### Bug Fixes
+
+* **jsonview:** keep single-column stream tables column-shaped ([#207](https://github.com/openai/openai-cli/issues/207)) ([64c5f23](https://github.com/openai/openai-cli/commit/64c5f23479ac43638cb91d3f9beb72063ceb3ea7))
+
+## [1.16.6](https://github.com/openai/openai-cli/compare/v1.16.5...v1.16.6) (2026-09-23)
+
+
+### Bug Fixes
+
+* **cli:** reject non-finite float flag values ([#200](https://github.com/openai/openai-cli/issues/200)) ([c8dd3e9](https://github.com/openai/openai-cli/commit/c8dd3e90a1a0cc60abab60823902bcb50f1c86d0))
+
+## [1.16.5](https://github.com/openai/openai-cli/compare/v1.16.4...v1.16.5) (2026-09-23)
+
+
+### Chores
+
+* **deps:** update openai-go to v3.66.0 ([#241](https://github.com/openai/openai-cli/issues/241)) ([6cc2737](https://github.com/openai/openai-cli/commit/6cc27376fcf4e4634cc109f1dd0f9ffe62a4ed2c))
+
+
+### Documentation
+
+* clarify collaborator-only pull request policy ([#242](https://github.com/openai/openai-cli/issues/242)) ([a5d5d0c](https://github.com/openai/openai-cli/commit/a5d5d0c8eb402f7d7133a8b7eff5f9931fd51d59))
+
+## [1.16.4](https://github.com/openai/openai-cli/compare/v1.16.3...v1.16.4) (2026-09-23)
+
+
+### Chores
+
+* **api:** clarify Chat Completions seed range ([#239](https://github.com/openai/openai-cli/issues/239)) ([fcda650](https://github.com/openai/openai-cli/commit/fcda65015bd46032a328d3590f8c76f13ba6251d))
+
 ## [1.16.3](https://github.com/openai/openai-cli/compare/v1.16.2...v1.16.3) (2026-09-22)
 
 
