@@ -1,4 +1,4 @@
-package cmd
+package custom
 
 import (
 	"encoding/base64"
@@ -107,6 +107,11 @@ func embedFilesValue(v reflect.Value, embedStyle FileEmbedStyle, stdin *onceStdi
 		if v.IsNil() {
 			return v, nil
 		}
+		v = v.Elem()
+	}
+	// Nullable string flags use pointers. Expand their values just like ordinary
+	// strings, retaining nil as JSON null and leaving other pointer types alone.
+	if v.Type() == reflect.TypeFor[*string]() && !v.IsNil() {
 		v = v.Elem()
 	}
 
@@ -332,7 +337,7 @@ func isUTF8TextFile(content []byte) bool {
 	return false
 }
 
-func flagOptions(
+func FlagOptions(
 	cmd *cli.Command,
 	nestedFormat apiquery.NestedQueryFormat,
 	arrayFormat apiquery.ArrayQueryFormat,
