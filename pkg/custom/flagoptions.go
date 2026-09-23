@@ -1,4 +1,4 @@
-package cmd
+package custom
 
 import (
 	"encoding/base64"
@@ -337,7 +337,7 @@ func isUTF8TextFile(content []byte) bool {
 	return false
 }
 
-func flagOptions(
+func FlagOptions(
 	cmd *cli.Command,
 	nestedFormat apiquery.NestedQueryFormat,
 	arrayFormat apiquery.ArrayQueryFormat,
