@@ -546,7 +546,7 @@ func (v *JSONViewer) toggleRaw() (tea.Model, tea.Cmd) {
 
 	v.resize(v.width, v.height)
 	for _, view := range v.stack {
-		if tv, ok := view.(*TableView); ok {
+		if tv, ok := view.(*TableView); ok && tv.table.Height() > 0 {
 			// Reveal the restored cursor using the final viewport dimensions.
 			tv.table.MoveDown(0)
 		}
