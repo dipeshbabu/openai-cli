@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.18.0](https://github.com/openai/openai-cli/compare/v1.17.0...v1.18.0) (2026-09-24)
+
+
+### Features
+
+* **cli:** simplify help and API key setup guidance ([#246](https://github.com/openai/openai-cli/issues/246)) ([eeb5f08](https://github.com/openai/openai-cli/commit/eeb5f0811923892bd86041b3071e853ce8f2495e))
+
+
+### Bug Fixes
+
+* **output:** return immediately for zero max-items ([#220](https://github.com/openai/openai-cli/issues/220)) ([9d90763](https://github.com/openai/openai-cli/commit/9d9076315350a7453ecbd7224d627bebf7805aec))
+
+## [1.17.0](https://github.com/openai/openai-cli/compare/v1.16.12...v1.17.0) (2026-09-24)
+
+
+### Features
+
+* **api:** add Cyber access programs to Responses ([#258](https://github.com/openai/openai-cli/issues/258)) ([eb3a800](https://github.com/openai/openai-cli/commit/eb3a800ae5d75315a33424f25f98cf8cfe4a33c1))
+
+
+### Chores
+
+* **api:** clarify Realtime modality array definitions ([#256](https://github.com/openai/openai-cli/issues/256)) ([e8a8337](https://github.com/openai/openai-cli/commit/e8a83372902121423aa2099bf8c6e3e9c6bae8d1))
+
 ## [1.16.12](https://github.com/openai/openai-cli/compare/v1.16.11...v1.16.12) (2026-09-23)
 
 
