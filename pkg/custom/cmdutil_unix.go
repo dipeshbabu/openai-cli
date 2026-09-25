@@ -90,14 +90,11 @@ func openSocketPairPager(label string) (*os.File, int, error) {
 
 	parentConn := os.NewFile(uintptr(parentFd), "parent-socket")
 
-	pagerProgram := os.Getenv("PAGER")
-	if pagerProgram == "" {
-		pagerProgram = "less"
-	}
+	command := pagerCommand()
 
-	pagerPath, err := exec.LookPath(pagerProgram)
+	pagerPath, err := exec.LookPath(command[0])
 	if err != nil {
-		unix.Close(parentFd)
+		parentConn.Close()
 		return nil, 0, err
 	}
 
@@ -115,9 +112,9 @@ func openSocketPairPager(label string) (*os.File, int, error) {
 		},
 	}
 
-	pid, err := syscall.ForkExec(pagerPath, []string{pagerProgram}, procAttr)
+	pid, err := syscall.ForkExec(pagerPath, command, procAttr)
 	if err != nil {
-		unix.Close(parentFd)
+		parentConn.Close()
 		return nil, 0, err
 	}
 

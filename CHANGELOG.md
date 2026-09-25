@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.20.4](https://github.com/openai/openai-cli/compare/v1.20.3...v1.20.4) (2026-09-25)
+
+
+### Chores
+
+* **api:** document fine-tuning and model errors ([#284](https://github.com/openai/openai-cli/issues/284)) ([ed97a81](https://github.com/openai/openai-cli/commit/ed97a81dc85125ce8efc735e25773a47c11529f1))
+
+## [1.20.3](https://github.com/openai/openai-cli/compare/v1.20.2...v1.20.3) (2026-09-25)
+
+
+### Chores
+
+* **api:** document stored chat completion errors ([#282](https://github.com/openai/openai-cli/issues/282)) ([1287876](https://github.com/openai/openai-cli/commit/128787625657632fae69a191dfe4a373c5e10e75))
+
+## [1.20.2](https://github.com/openai/openai-cli/compare/v1.20.1...v1.20.2) (2026-09-25)
+
+
+### Bug Fixes
+
+* reuse pending Homebrew cask update PR ([#280](https://github.com/openai/openai-cli/issues/280)) ([da8b100](https://github.com/openai/openai-cli/commit/da8b1002abd6abea84269d535ebc958e1b5b4bdd))
+
+## [1.20.1](https://github.com/openai/openai-cli/compare/v1.20.0...v1.20.1) (2026-09-25)
+
+
+### Bug Fixes
+
+* **cmd:** split PAGER into program and arguments ([#208](https://github.com/openai/openai-cli/issues/208)) ([d3ce908](https://github.com/openai/openai-cli/commit/d3ce908972df2c5d17aea8470b3500cd90494c10))
+* **jsonview:** reflow text when the terminal width changes ([#217](https://github.com/openai/openai-cli/issues/217)) ([ff05317](https://github.com/openai/openai-cli/commit/ff05317def9f595de6dd7b81790dcd9d0b7141c3))
+
+
+### Chores
+
+* **api:** document batch error responses ([#275](https://github.com/openai/openai-cli/issues/275)) ([ebcd64e](https://github.com/openai/openai-cli/commit/ebcd64eb96eb2cac972b6ae12542861b7c07cd2b))
+
 ## [1.20.0](https://github.com/openai/openai-cli/compare/v1.19.2...v1.20.0) (2026-09-25)
 
 
