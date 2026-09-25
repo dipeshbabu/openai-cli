@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.19.0](https://github.com/openai/openai-cli/compare/v1.18.2...v1.19.0) (2026-09-25)
+
+
+### Features
+
+* **cli:** make command results readable by default ([#265](https://github.com/openai/openai-cli/issues/265)) ([9d87b92](https://github.com/openai/openai-cli/commit/9d87b92bb9df3e665426cd6e5305de95a63f7cd5))
+
+## [1.18.2](https://github.com/openai/openai-cli/compare/v1.18.1...v1.18.2) (2026-09-24)
+
+
+### Bug Fixes
+
+* suppress misleading "Did you mean" suggestions ([#17](https://github.com/openai/openai-cli/issues/17)) ([3cb6f72](https://github.com/openai/openai-cli/commit/3cb6f7254a296ba268259415d2a68dc393c56182))
+
 ## [1.18.1](https://github.com/openai/openai-cli/compare/v1.18.0...v1.18.1) (2026-09-24)
 
 

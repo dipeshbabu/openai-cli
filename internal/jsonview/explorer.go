@@ -5,16 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image/color"
+	"io"
 	"math"
 	"os"
 	"strings"
+	"sync"
 
-	"github.com/charmbracelet/bubbles/help"
-	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/table"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/table"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/muesli/reflow/truncate"
 	"github.com/muesli/reflow/wordwrap"
@@ -23,12 +26,13 @@ import (
 
 const (
 	// UI layout constants
-	borderPadding     = 2
-	heightOffset      = 5
-	tableMinHeight    = 2
-	titlePaddingLeft  = 2
-	titlePaddingTop   = 0
-	footerPaddingLeft = 1
+	borderPadding         = 2
+	heightOffset          = 5
+	tableMinHeight        = 2
+	titlePaddingLeft      = 2
+	titlePaddingTop       = 0
+	footerPaddingLeft     = 1
+	cellHorizontalPadding = 2 // bubbles/v2 table cell style: Padding(0, 1) on both sides
 
 	// Column width constants
 	defaultColumnWidth = 10
@@ -38,7 +42,9 @@ const (
 	// String formatting constants
 	maxStringLength  = 100
 	maxPreviewLength = 24
+)
 
+var (
 	arrayColor  = lipgloss.Color("1")
 	stringColor = lipgloss.Color("5")
 	objectColor = lipgloss.Color("4")
@@ -203,6 +209,16 @@ func (tv *TableView) Resize(width, height int) {
 	tv.width = width
 	tv.height = height
 	tv.updateColumnWidths(width)
+	// In bubbles v2 the table's underlying viewport renders nothing when its
+	// width is 0, and pads rows to its full width when set. Size it to the
+	// natural content width so rows aren't padded past the surrounding border.
+	contentWidth := 0
+	for _, c := range tv.table.Columns() {
+		if c.Width > 0 {
+			contentWidth += c.Width + cellHorizontalPadding
+		}
+	}
+	tv.table.SetWidth(contentWidth)
 	tv.table.SetHeight(min(height-heightOffset, tableMinHeight+len(tv.table.Rows())))
 }
 
@@ -279,13 +295,13 @@ func (tv *TextView) Update(msg tea.Msg, raw bool) tea.Cmd {
 func (tv *TextView) Resize(width, height int) {
 	h := height - heightOffset
 	if !tv.ready {
-		tv.viewport = viewport.New(width, h)
+		tv.viewport = viewport.New(viewport.WithWidth(width), viewport.WithHeight(h))
 		tv.viewport.SetContent(wordwrap.String(SanitizeTerminalString(tv.data.Str), width))
 		tv.ready = true
 		return
 	}
-	tv.viewport.Width = width
-	tv.viewport.Height = h
+	tv.viewport.SetWidth(width)
+	tv.viewport.SetHeight(h)
 }
 
 type JSONViewer struct {
@@ -301,24 +317,78 @@ type JSONViewer struct {
 
 // ExploreJSON explores a single JSON value known ahead of time
 func ExploreJSON(title string, json gjson.Result) error {
+	return ExploreJSONWithOutput(title, json, os.Stdout)
+}
+
+// ExploreJSONWithOutput sends the explorer and its selected value to output.
+func ExploreJSONWithOutput(title string, json gjson.Result, output io.Writer) error {
 	view, err := newView("", json, false)
 	if err != nil {
 		return err
 	}
 
 	viewer := &JSONViewer{stack: []JSONView{view}, root: title, rawMode: false, help: help.New()}
-	return runExplorer(viewer)
+	return runExplorerWithOutput(viewer, output)
 }
 
-func runExplorer(viewer *JSONViewer, options ...tea.ProgramOption) error {
+func runExplorerWithOutput(viewer *JSONViewer, output io.Writer, options ...tea.ProgramOption) error {
+	if output == nil {
+		output = os.Stdout
+	}
+	tracked := &explorerOutput{writer: output}
+	options = append(options, tea.WithOutput(tracked.terminalOutput()))
 	_, err := tea.NewProgram(viewer, options...).Run()
-	err = errors.Join(err, viewer.loadErr)
+	err = errors.Join(err, viewer.loadErr, tracked.Err())
 	if viewer.message != "" {
-		_, msgErr := fmt.Println("\n" + viewer.message)
+		message := "\n" + viewer.message + "\n"
+		_, msgErr := io.WriteString(tracked, message)
 		err = errors.Join(err, msgErr)
 	}
 	return err
 }
+
+// Bubble Tea ignores rendering write errors, so retain the first failure and
+// return it after the program has restored the terminal.
+type explorerOutput struct {
+	writer io.Writer
+	mu     sync.Mutex
+	err    error
+}
+
+func (w *explorerOutput) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	n, err := w.writer.Write(p)
+	if err == nil && n != len(p) {
+		err = io.ErrShortWrite
+	}
+	if w.err == nil {
+		w.err = err
+	}
+	return n, err
+}
+
+func (w *explorerOutput) Err() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.err
+}
+
+func (w *explorerOutput) terminalOutput() io.Writer {
+	if file, ok := w.writer.(term.File); ok {
+		return explorerFileOutput{File: file, output: w}
+	}
+	return w
+}
+
+// Preserve Bubble Tea's terminal detection without giving ordinary writers a
+// synthetic file descriptor.
+type explorerFileOutput struct {
+	term.File
+	output *explorerOutput
+}
+
+func (w explorerFileOutput) Write(p []byte) (int, error) { return w.output.Write(p) }
 
 type hasRawJSON interface {
 	RawJSON() string
@@ -326,11 +396,21 @@ type hasRawJSON interface {
 
 // ExploreJSONStream explores JSON data loaded incrementally via an iterator
 func ExploreJSONStream[T any](title string, it Iterator[T]) error {
+	return ExploreJSONStreamWithOutput(title, it, os.Stdout)
+}
+
+// ExploreJSONStreamWithOutput sends the explorer and its selected value to output.
+func ExploreJSONStreamWithOutput[T any](title string, it Iterator[T], output io.Writer) error {
 	anyIt := genericToAnyIterator(it)
+	if output == nil {
+		output = os.Stdout
+	}
 
 	preloadCount := 20
-	if termHeight, _, err := term.GetSize(os.Stdout.Fd()); err == nil {
-		preloadCount = termHeight
+	if file, ok := output.(interface{ Fd() uintptr }); ok {
+		if termHeight, _, err := term.GetSize(file.Fd()); err == nil {
+			preloadCount = termHeight
+		}
 	}
 
 	items := make([]any, 0, preloadCount)
@@ -359,7 +439,7 @@ func ExploreJSONStream[T any](title string, it Iterator[T]) error {
 	}
 
 	viewer := &JSONViewer{stack: []JSONView{view}, root: title, rawMode: false, help: help.New()}
-	return runExplorer(viewer)
+	return runExplorerWithOutput(viewer, output)
 }
 
 func marshalItemsToJSONArray(items []any) ([]byte, error) {
@@ -390,7 +470,7 @@ func (v *JSONViewer) Init() tea.Cmd     { return nil }
 
 func (v *JSONViewer) resize(width, height int) {
 	v.width, v.height = width, height
-	v.help.Width = width
+	v.help.SetWidth(width)
 	for i := range v.stack {
 		v.stack[i].Resize(width, height)
 	}
@@ -417,7 +497,7 @@ func (v *JSONViewer) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		v.resize(msg.Width-borderPadding, msg.Height)
 		return v, nil
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keys.Quit):
 			return v, tea.Quit
@@ -558,14 +638,14 @@ func (v *JSONViewer) toggleRaw() (tea.Model, tea.Cmd) {
 	return v, nil
 }
 
-func (v *JSONViewer) View() string {
+func (v *JSONViewer) View() tea.View {
 	view := v.current()
 	title := v.buildTitle(view)
 	content := titleStyle.Render(title)
 	style := v.getStyleForData(view.GetData())
 	content += "\n" + style.Render(view.View())
 	content += "\n" + v.help.View(keys)
-	return content
+	return tea.NewView(content)
 }
 
 func (v *JSONViewer) buildTitle(view JSONView) string {
@@ -719,7 +799,7 @@ func newObjectTableView(path string, data gjson.Result, raw bool) *TableView {
 	}
 }
 
-func createTable(columns []table.Column, rows []table.Row, bgColor lipgloss.Color) table.Model {
+func createTable(columns []table.Column, rows []table.Row, bgColor color.Color) table.Model {
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
