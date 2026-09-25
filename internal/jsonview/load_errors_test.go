@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/bubbles/help"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/help"
+	tea "charm.land/bubbletea/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
@@ -70,6 +70,6 @@ func TestRunExplorerReturnsLazyLoadError(t *testing.T) {
 	viewer.resize(80, 24)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err = runExplorer(viewer, tea.WithContext(ctx), tea.WithInput(strings.NewReader("j")), tea.WithOutput(io.Discard), tea.WithoutRenderer())
+	err = runExplorerWithOutput(viewer, io.Discard, tea.WithContext(ctx), tea.WithInput(strings.NewReader("j")), tea.WithoutRenderer())
 	require.ErrorIs(t, err, failure)
 }

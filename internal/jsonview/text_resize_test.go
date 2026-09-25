@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 )
@@ -32,12 +32,12 @@ func TestExplorerTextResizePreservesScrollingAndEscapes(t *testing.T) {
 	require.NoError(t, err)
 	view.Resize(10, 8)
 	view.viewport.GotoBottom()
-	before := view.viewport.YOffset
+	before := view.viewport.YOffset()
 	require.Positive(t, before)
 	view.Resize(10, 9)
-	require.Equal(t, before, view.viewport.YOffset)
+	require.Equal(t, before, view.viewport.YOffset())
 	view.Resize(100, 20)
-	require.Zero(t, view.viewport.YOffset, "rewrapping must clamp an offset past the last line")
+	require.Zero(t, view.viewport.YOffset(), "rewrapping must clamp an offset past the last line")
 	require.Equal(t, strings.Fields(SanitizeTerminalString(view.data.Str)), strings.Fields(view.View()))
 	requireNoRawTerminalControls(t, strings.TrimSpace(view.View()))
 }
@@ -51,13 +51,13 @@ func TestExplorerTextReflowsInTinyTerminal(t *testing.T) {
 			viewer := &JSONViewer{stack: []JSONView{view}}
 			viewer.Update(tea.WindowSizeMsg{Width: 10 + borderPadding, Height: 8})
 			view.viewport.GotoBottom()
-			require.Positive(t, view.viewport.YOffset)
+			require.Positive(t, view.viewport.YOffset())
 
 			require.NotPanics(t, func() {
 				viewer.Update(tea.WindowSizeMsg{Width: 100 + borderPadding, Height: height})
 				viewer.View()
 			})
-			require.GreaterOrEqual(t, view.viewport.Height, 0)
+			require.GreaterOrEqual(t, view.viewport.Height(), 0)
 			require.Equal(t, 1, view.viewport.TotalLineCount())
 
 			viewer.Update(tea.WindowSizeMsg{Width: 100 + borderPadding, Height: 20})
