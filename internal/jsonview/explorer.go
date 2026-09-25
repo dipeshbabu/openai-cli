@@ -220,6 +220,10 @@ func (tv *TableView) Resize(width, height int) {
 	}
 	tv.table.SetWidth(contentWidth)
 	tv.table.SetHeight(min(height-heightOffset, tableMinHeight+len(tv.table.Rows())))
+	if tv.table.Height() > 0 {
+		// Reveal the cursor once the resized viewport has room for rows again.
+		tv.table.MoveDown(0)
+	}
 }
 
 func (tv *TableView) updateColumnWidths(width int) {
@@ -634,12 +638,6 @@ func (v *JSONViewer) toggleRaw() (tea.Model, tea.Cmd) {
 	}
 
 	v.resize(v.width, v.height)
-	for _, view := range v.stack {
-		if tv, ok := view.(*TableView); ok && tv.table.Height() > 0 {
-			// Reveal the restored cursor using the final viewport dimensions.
-			tv.table.MoveDown(0)
-		}
-	}
 	return v, nil
 }
 
